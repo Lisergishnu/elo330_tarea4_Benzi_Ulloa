@@ -24,6 +24,17 @@ public class MainApp {
 			remote_host = args[5];
 			remote_port = Integer.parseInt(args[6]);
 		}
+		
+		//Generate delayers in both ways (two instances of the same object)
+		Delayer outward = new Delayer("127.0.0.1",local_port,remote_host,remote_port,delay_avg,delay_variation,loss_percent);
+		Delayer inward = new Delayer(remote_host,remote_port,"127.0.0.1",local_port,delay_avg,delay_variation,loss_percent);
+		
+		try {
+			outward.join();
+			inward.join();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
-
 }
