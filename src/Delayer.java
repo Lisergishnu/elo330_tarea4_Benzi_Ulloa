@@ -89,8 +89,7 @@ public class Delayer {
 	        	/* Agregar delay solo cuando haya un paquete disponible,
 	        	 * y hacerlo fuera de SYNC */
 	        	if(ready){
-	        		// TODO: Random Sleep time con jitter y loss percent
-        			Thread.sleep(1000);
+        			Thread.sleep((long) (delay_avg + delay_variation*Math.random()));
 		        	ready = false;
 			        try {
 			        	synchronized(sync){
