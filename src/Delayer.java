@@ -70,12 +70,6 @@ public class Delayer {
 		@Override
 		public void run() {
 			while(true){
-				try {
-					this.wait();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
 				sendPacket();
 			}
 		}
@@ -145,14 +139,11 @@ public class Delayer {
 		        
 		        /* Cuando llega un paquete nuevo, notificar */
 				synchronized(sync){
-			        sync.notify();
 			        circularBuffer[rIndex] = tempBuffer;
+    		        rIndex = (rIndex+1) % BUFFER_SIZE;
+			        sync.notify();
 				}
-		        rIndex = (rIndex+1) % BUFFER_SIZE;
-		        
-		        /* MBT: waking up sender thread */
-		        sender.notify();
-		        
+		             
 		        System.out.println("Receiving packet: " + new String(tempBuffer));
 			} catch (Exception e) {
 				e.printStackTrace();
