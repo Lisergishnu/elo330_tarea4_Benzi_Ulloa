@@ -84,7 +84,7 @@ public class Delayer {
 	        	/* Agregar delay solo cuando haya un paquete disponible,
 	        	 * y hacerlo fuera de SYNC */
 	        	if(ready){
-        			Thread.sleep((long) (delay_avg + delay_variation*Math.random()));
+        			Thread.sleep((long) (delay_avg - delay_variation + 2*delay_variation*Math.random()));
 		        	ready = false;
 			        try {
 			        	synchronized(sync){
@@ -132,6 +132,10 @@ public class Delayer {
 	        	 * ya que por si mismo genera un estado de espera */
 		        socket.receive(packet);
 		        
+		        /* Verificar si el paquete sera botado */
+		        if (Math.random()*100 < loss_percent) {
+		        	System.out.println("Packet loss.");
+		        } else {
 		        /* Cuando llega un paquete nuevo, notificar */
 				synchronized(sync){
 			        circularBuffer[rIndex] = tempBuffer;
@@ -141,6 +145,7 @@ public class Delayer {
 		             
 		        System.out.println("Receiving packet: " + new String(tempBuffer));
 		        System.out.println("Time of arrival: " + System.currentTimeMillis());
+		        }
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
