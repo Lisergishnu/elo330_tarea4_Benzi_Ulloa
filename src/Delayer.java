@@ -3,18 +3,13 @@
  * @author mbenzit
  *
  */
-import java.io.IOException;
 import java.net.*;
-import java.sql.Time;
-import java.util.Timer;
 
 public class Delayer {
 
 	private int BUFFER_SIZE = 50;
 	private int BUFFER_LENGTH = 1024;
 	
-	private String local_host;
-	private int local_port;
 	private String remote_host;
 	private int remote_port;
 	private int delay_avg;
@@ -29,11 +24,9 @@ public class Delayer {
 	private Thread sender;
 	private Thread reciever;
 
-	public Delayer(String local_host, int local_port, String remote_host,
+	public Delayer(int local_port, String remote_host,
 			int remote_port, int delay_avg, int delay_variation,
 			int loss_percent) throws SocketException  {
-				this.local_host = local_host;
-				this.local_port = local_port;
 				this.remote_host = remote_host;
 				this.remote_port = remote_port;
 				this.delay_avg = delay_avg;
