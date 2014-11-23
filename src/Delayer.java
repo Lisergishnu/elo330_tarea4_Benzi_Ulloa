@@ -23,7 +23,6 @@ public class Delayer {
 	protected DatagramSocket socket;
 	
 	private String sync = new String();
-	private boolean newPacket = false;
 	
 	private Thread sender;
 	private Thread reciever;
@@ -38,7 +37,7 @@ public class Delayer {
 				this.delay_avg = delay_avg;
 				this.delay_variation = delay_variation;
 				this.loss_percent = loss_percent;
-
+				
 			socket = new DatagramSocket(local_port);
 			circularBuffer = new byte[BUFFER_SIZE][];
 			SenderThread s = new SenderThread();
@@ -62,8 +61,11 @@ public class Delayer {
 		reciever.join();
 	}
 	
+
+	/* Hilo encargado del envio de datagramas */
 	class SenderThread implements Runnable {
 		private DatagramPacket packet = null;		
+		private boolean ready = false;
 		
 		@Override
 		public void run() {
@@ -73,32 +75,42 @@ public class Delayer {
 		}
 		private void sendPacket(){
 	        try {
+	        	/* Si el packete en cola es nulo, esperar la llegada de un paquete nuevo,
+	        	 * el hilo receptor generara la notificacion */
 	        	synchronized(sync){
-	        		if(!newPacket)
+	        		if(circularBuffer[sIndex] == null){
 	        			sync.wait();
-	        		newPacket = false;
-	        		sync.notify();
+						System.out.println("Delaying packet: " + new String(circularBuffer[sIndex]));
+	        		}
+	        		if(circularBuffer[sIndex] != null)
+	        			ready = true;
 	        	}
-        		Thread.sleep(1000);
-	        	synchronized(sync){
-	        		if(circularBuffer[sIndex] != null){
-						System.out.println("Sending packet: " + new String(circularBuffer[sIndex]));
-				        try {
+	        	
+	        	/* Agregar delay solo cuando haya un paquete disponible,
+	        	 * y hacerlo fuera de SYNC */
+	        	if(ready){
+	        		// TODO: Random Sleep time con jitter y loss percent
+        			Thread.sleep(1000);
+		        	ready = false;
+			        try {
+			        	synchronized(sync){
+			        		System.out.println("Sending packet: " + new String(circularBuffer[sIndex]));
 							packet = new DatagramPacket(circularBuffer[sIndex], BUFFER_LENGTH, InetAddress.getByName(remote_host), remote_port);
 							socket.send(packet);
 							circularBuffer[sIndex] = null;
 					        sIndex = (sIndex+1) % BUFFER_SIZE;
-						} catch (Exception e1) {
-							e1.printStackTrace();
-						}
+			        	}
+					} catch (Exception e1) {
+						e1.printStackTrace();
 					}
-	        	}
+				}
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
 	}
 	
+	/* Hilo encargado de la recepcion de datagramas */
 	class RecieverThread implements Runnable {
 		private DatagramPacket packet = null;		
 		
@@ -110,24 +122,29 @@ public class Delayer {
 		}
 		private void recvPacket(){
 	        try {
+	        	byte[] tempBuffer = new byte[BUFFER_LENGTH];
+				packet = new DatagramPacket(tempBuffer, BUFFER_LENGTH);
+				
+				/* Lectura en circular Buffer y sIndex SYNC */
 	        	synchronized(sync){
-	        		if(newPacket)
-	        			sync.wait();
 	        		if(circularBuffer[rIndex] != null) {
 		        		System.out.println("Buffer override");
 		        		sIndex = (sIndex+1) % BUFFER_SIZE;
 		        	}
-	        		else{
-			        	byte[] tempBuffer = new byte[BUFFER_LENGTH];
-						packet = new DatagramPacket(tempBuffer, BUFFER_LENGTH);
-				        socket.receive(packet);
-				        circularBuffer[rIndex] = tempBuffer;
-				        rIndex = (rIndex+1) % BUFFER_SIZE;
-						System.out.println("Receiving packet: " + new String(tempBuffer));
-	        		}
-	        		newPacket = true;
-	        		sync.notify();
 	        	}
+	        	
+	        	/* socket.receive no debe ir dentro de SYNC, 
+	        	 * ya que por si mismo genera un estado de espera */
+		        socket.receive(packet);
+		        
+		        /* Cuando llega un paquete nuevo, notificar */
+				synchronized(sync){
+			        sync.notify();
+			        circularBuffer[rIndex] = tempBuffer;
+				}
+		        rIndex = (rIndex+1) % BUFFER_SIZE;
+		        
+		        System.out.println("Receiving packet: " + new String(tempBuffer));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

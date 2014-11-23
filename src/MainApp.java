@@ -34,9 +34,9 @@ public class MainApp {
 		/* Try catch para socketException y el thread join*/
 		try {
 			outward = new Delayer("127.0.0.1",local_port,remote_host,remote_port,delay_avg,delay_variation,loss_percent);
-			//inward = new Delayer(remote_host,remote_port+1,"127.0.0.1",local_port+3,delay_avg,delay_variation,loss_percent);
+			inward = new Delayer(remote_host,remote_port+1,"127.0.0.1",local_port+3,delay_avg,delay_variation,loss_percent);
 			outward.join();
-			//inward.join();
+			inward.join();
 		} catch (Exception e1) {
 			e1.printStackTrace();
 		}
