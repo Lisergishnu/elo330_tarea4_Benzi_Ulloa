@@ -5,6 +5,8 @@
  */
 import java.io.IOException;
 import java.net.*;
+import java.sql.Time;
+import java.util.Timer;
 
 public class Delayer {
 
@@ -96,6 +98,7 @@ public class Delayer {
 			        		System.out.println("Sending packet: " + new String(circularBuffer[sIndex]));
 							packet = new DatagramPacket(circularBuffer[sIndex], BUFFER_LENGTH, InetAddress.getByName(remote_host), remote_port);
 							socket.send(packet);
+							System.out.println("Time of departure: " + System.currentTimeMillis());
 							circularBuffer[sIndex] = null;
 					        sIndex = (sIndex+1) % BUFFER_SIZE;
 			        	}
@@ -144,6 +147,7 @@ public class Delayer {
 				}
 		             
 		        System.out.println("Receiving packet: " + new String(tempBuffer));
+		        System.out.println("Time of arrival: " + System.currentTimeMillis());
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
