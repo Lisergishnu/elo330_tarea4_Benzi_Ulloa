@@ -23,7 +23,7 @@ public class Delayer {
 	
 	private Thread sender;
 	private Thread reciever;
-
+	
 	public Delayer(int local_port, String remote_host,
 			int remote_port, int delay_avg, int delay_variation,
 			int loss_percent) throws SocketException  {
@@ -61,6 +61,8 @@ public class Delayer {
 	class SenderThread implements Runnable {
 		private DatagramPacket packet = null;		
 		private boolean ready = false;
+		private long delay_start;
+		private long virtual_delay;
 		
 		@Override
 		public void run() {
@@ -84,7 +86,9 @@ public class Delayer {
 	        	/* Agregar delay solo cuando haya un paquete disponible,
 	        	 * y hacerlo fuera de SYNC */
 	        	if(ready){
-        			Thread.sleep((long) (delay_avg - delay_variation + 2*delay_variation*Math.random()));
+	        		delay_start = System.currentTimeMillis();
+	        		virtual_delay = (long) (delay_avg - delay_variation + 2*delay_variation*Math.random());
+        			Thread.sleep(virtual_delay);
 		        	ready = false;
 			        try {
 			        	synchronized(sync){
@@ -92,6 +96,7 @@ public class Delayer {
 							packet = new DatagramPacket(circularBuffer[sIndex], BUFFER_LENGTH, InetAddress.getByName(remote_host), remote_port);
 							socket.send(packet);
 							System.out.println("Time of departure: " + System.currentTimeMillis());
+			        		System.out.println("Virtual Delay: " + virtual_delay + " Real Delay: " + (System.currentTimeMillis() - delay_start));
 							circularBuffer[sIndex] = null;
 					        sIndex = (sIndex+1) % BUFFER_SIZE;
 			        	}
